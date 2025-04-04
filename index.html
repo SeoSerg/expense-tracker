@@ -7,7 +7,7 @@
   <style>
     body {
       font-family: sans-serif;
-      max-width: 500px;
+      max-width: 600px;
       margin: 20px auto;
       padding: 10px;
     }
@@ -27,7 +27,26 @@
     .row > * {
       flex: 1;
     }
+    .chart {
+      width: 100%;
+      height: 400px;
+    }
+    .tabs {
+      margin-top: 20px;
+    }
+    .tabs button {
+      padding: 10px;
+      width: 50%;
+      cursor: pointer;
+    }
+    .content {
+      display: none;
+    }
+    .active {
+      display: block;
+    }
   </style>
+  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 </head>
 <body>
   <h2>Учёт расходов</h2>
@@ -75,38 +94,96 @@
     <button type="submit">Сохранить</button>
   </form>
 
-  <script>
-    const form = document.getElementById("expense-form");
-    const amountInput = document.getElementById("amount");
-    const typeSelect = document.getElementById("type");
-    const tagList = document.getElementById("tag-list");
+  <!-- Таб с графиками -->
+  <div class="tabs">
+    <button onclick="openTab('chart1')">График по счетам</button>
+    <button onclick="openTab('chart2')">График по категориям</button>
+  </div>
 
-    // Определяем пользователя по устройству (один раз)
-    if (!localStorage.getItem("user")) {
-      const who = prompt("Введите имя пользователя (например, Сергей или Жена)");
-      localStorage.setItem("user", who);
+  <!-- Содержимое вкладок -->
+  <div id="chart1" class="content active">
+    <div id="account-chart" class="chart"></div>
+  </div>
+  <div id="chart2" class="content">
+    <div id="category-chart" class="chart"></div>
+  </div>
+
+  <script>
+    google.charts.load('current', {'packages':['corechart', 'bar']});
+
+    // Функция для отображения вкладок
+    function openTab(tabName) {
+      const tabs = document.querySelectorAll('.content');
+      tabs.forEach(tab => {
+        tab.classList.remove('active');
+      });
+      document.getElementById(tabName).classList.add('active');
     }
 
-    // Меняем знак суммы при выборе типа
-    typeSelect.addEventListener("change", () => {
-      if (typeSelect.value === "Расход" && amountInput.value > 0) {
-        amountInput.value = -Math.abs(amountInput.value);
-      } else if (typeSelect.value === "Доход") {
-        amountInput.value = Math.abs(amountInput.value);
-      }
-    });
+    // Загружаем и рисуем графики
+    google.charts.setOnLoadCallback(drawCharts);
 
-    form.addEventListener("submit", async (e) => {
+    function drawCharts() {
+      // Данные для графика по счетам
+      const accountData = google.visualization.arrayToDataTable([
+        ['Счёт', 'Сумма'],
+        ['Жизнь', 1000], // Пример данных
+        ['Карта', 1500],
+        ['Наличные', 500]
+      ]);
+
+      const accountOptions = {
+        title: 'Траты по счетам',
+        chartArea: {width: '50%'},
+        hAxis: {
+          title: 'Сумма',
+          minValue: 0
+        },
+        vAxis: {
+          title: 'Счёт'
+        }
+      };
+
+      const accountChart = new google.visualization.BarChart(document.getElementById('account-chart'));
+      accountChart.draw(accountData, accountOptions);
+
+      // Данные для графика по категориям
+      const categoryData = google.visualization.arrayToDataTable([
+        ['Категория', 'Сумма'],
+        ['Еда', 2000],
+        ['Транспорт', 800],
+        ['Дом', 600],
+        ['Работа', 400]
+      ]);
+
+      const categoryOptions = {
+        title: 'Траты по категориям',
+        chartArea: {width: '50%'},
+        hAxis: {
+          title: 'Сумма',
+          minValue: 0
+        },
+        vAxis: {
+          title: 'Категория'
+        }
+      };
+
+      const categoryChart = new google.visualization.BarChart(document.getElementById('category-chart'));
+      categoryChart.draw(categoryData, categoryOptions);
+    }
+
+    // Обработка формы
+    const form = document.getElementById('expense-form');
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
-
       const data = {
         user: localStorage.getItem("user"),
-        type: typeSelect.value,
+        type: document.getElementById("type").value,
         account: document.getElementById("account").value,
         category: document.getElementById("category").value,
         tag: document.getElementById("tag").value,
         currency: document.getElementById("currency").value,
-        amount: typeSelect.value === "Расход" ? -Math.abs(+amountInput.value) : +amountInput.value,
+        amount: document.getElementById("amount").value,
         comment: document.getElementById("comment").value
       };
 
