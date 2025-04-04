@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Учёт расходов</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 500px;
+      margin: 20px auto;
+      padding: 10px;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+    input, select, textarea, button {
+      width: 100%;
+      padding: 8px;
+      margin-top: 4px;
+    }
+    .row {
+      display: flex;
+      gap: 10px;
+    }
+    .row > * {
+      flex: 1;
+    }
+  </style>
+</head>
+<body>
+  <h2>Учёт расходов</h2>
+  <form id="expense-form">
+    <label>Расход / Доход
+      <select id="type">
+        <option value="Расход" selected>Расход</option>
+        <option value="Доход">Доход</option>
+      </select>
+    </label>
+
+    <label>Счёт
+      <select id="account">
+        <option value="Жизнь" selected>Жизнь</option>
+        <option value="Карта">Карта</option>
+        <option value="Наличные">Наличные</option>
+      </select>
+    </label>
+
+    <label>Категория
+      <select id="category" required>
+        <option value="" disabled selected>Выберите категорию</option>
+        <option>Еда</option>
+        <option>Транспорт</option>
+        <option>Дом</option>
+        <option>Работа</option>
+      </select>
+    </label>
+
+    <label>Тег <input type="text" id="tag" list="tag-list" /></label>
+    <datalist id="tag-list"></datalist>
+
+    <label>Валюта
+      <select id="currency">
+        <option value="UAH" selected>UAH</option>
+        <option value="USD">USD</option>
+        <option value="EUR">EUR</option>
+        <option value="RUB">RUB</option>
+      </select>
+    </label>
+
+    <label>Сумма <input type="number" id="amount" required /></label>
+    <label>Комментарий <textarea id="comment"></textarea></label>
+
+    <button type="submit">Сохранить</button>
+  </form>
+
+  <script>
+    const form = document.getElementById("expense-form");
+    const amountInput = document.getElementById("amount");
+    const typeSelect = document.getElementById("type");
+    const tagList = document.getElementById("tag-list");
+
+    // Определяем пользователя по устройству (один раз)
+    if (!localStorage.getItem("user")) {
+      const who = prompt("Введите имя пользователя (например, Сергей или Жена)");
+      localStorage.setItem("user", who);
+    }
+
+    // Меняем знак суммы при выборе типа
+    typeSelect.addEventListener("change", () => {
+      if (typeSelect.value === "Расход" && amountInput.value > 0) {
+        amountInput.value = -Math.abs(amountInput.value);
+      } else if (typeSelect.value === "Доход") {
+        amountInput.value = Math.abs(amountInput.value);
+      }
+    });
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const data = {
+        user: localStorage.getItem("user"),
+        type: typeSelect.value,
+        account: document.getElementById("account").value,
+        category: document.getElementById("category").value,
+        tag: document.getElementById("tag").value,
+        currency: document.getElementById("currency").value,
+        amount: typeSelect.value === "Расход" ? -Math.abs(+amountInput.value) : +amountInput.value,
+        comment: document.getElementById("comment").value
+      };
+
+      const url = "https://script.google.com/macros/s/AKfycbzimi4EMVr78vlYTG3C9jxbLU7dZ6k0l2noEdV-jD01QJbf4H238mOsrFavXpSdzmap/exec";
+
+      try {
+        await fetch(url, {
+          method: "POST",
+          body: JSON.stringify(data),
+          headers: { "Content-Type": "application/json" }
+        });
+        alert("Сохранено!");
+        form.reset();
+      } catch (err) {
+        alert("Ошибка при сохранении");
+        console.error(err);
+      }
+    });
+  </script>
+</body>
+</html>
